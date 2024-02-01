@@ -16,6 +16,8 @@
 
 #include QMK_KEYBOARD_H
 
+#include "pointing_device_auto_mouse.h"
+
 enum layers {
     _QWERTY = 0,
     _COLEMAK_DH,
@@ -412,3 +414,8 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
     }
 };
 #endif
+
+void pointing_device_init_user(void) {
+    set_auto_mouse_layer(_MOUSE);
+    set_auto_mouse_enable(true);
+}

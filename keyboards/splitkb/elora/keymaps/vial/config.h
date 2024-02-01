@@ -37,3 +37,6 @@
 
 #define VIAL_UNLOCK_COMBO_ROWS { 3, 9 }
 #define VIAL_UNLOCK_COMBO_COLS { 2, 5 }
+
+// Automatically enable mouse keys when moving the mouse with the joystick
+#define POINTING_DEVICE_AUTO_MOUSE_ENABLE
