@@ -218,6 +218,8 @@ static void myr_encoder_init(void) {
 }
 
 static uint16_t myr_joystick_timer;
+static int16_t x_origin = 0;
+static int16_t y_origin = 0;
 static void myr_joystick_init(void) {
     setPinInputHigh(MYRIAD_GPIO1); // Press
 
@@ -293,8 +295,8 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
     myr_joystick_timer = timer_read();
 
     // `analogReadPin` returns 0..1023
-    int16_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1; // Note: axis is flipped
-    int16_t x = analogReadPin(MYRIAD_ADC2) - 512;
+    int16_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1 - y_origin; // Note: axis is flipped
+    int16_t x = analogReadPin(MYRIAD_ADC2) - 512 - x_origin;
     // Values are now -512..512
 
     // Create a dead zone in the middle where the mouse doesn't move
@@ -324,6 +326,9 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
 void pointing_device_driver_init(void) {
     setPinInput(MYRIAD_ADC1); // Y
     setPinInput(MYRIAD_ADC2); // X
+    wait_ms(20);
+    y_origin = (analogReadPin(MYRIAD_ADC1) - 512) * -1; // Note: axis is flipped
+    x_origin = analogReadPin(MYRIAD_ADC2) - 512;
 }
 
 void myriad_task(void) {
