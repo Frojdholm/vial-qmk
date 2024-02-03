@@ -293,8 +293,8 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
     myr_joystick_timer = timer_read();
 
     // `analogReadPin` returns 0..1023
-    int32_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1; // Note: axis is flipped
-    int32_t x = analogReadPin(MYRIAD_ADC2) - 512;
+    int16_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1; // Note: axis is flipped
+    int16_t x = analogReadPin(MYRIAD_ADC2) - 512;
     // Values are now -512..512
 
     // Create a dead zone in the middle where the mouse doesn't move
@@ -306,9 +306,8 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
         x = 0;
     }
 
-    // quadratic movement
-    x = abs(x) * x / 5000;
-    y = abs(y) * y / 5000;
+    x = x / 16;
+    y = y / 16;
 
     // Clamp final value to make sure we don't under/overflow
     if (y < -127) { y = -127; }
