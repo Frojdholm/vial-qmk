@@ -34,7 +34,7 @@ static bool myriad_reader(uint8_t *data, uint16_t length) {
     uint8_t last_page_size = length % 256;
 
     for (int i = 0; i < num_pages; i++) {
-        uint8_t reg = 0; // We always start on a page boundary, so this is always zero 
+        uint8_t reg = 0; // We always start on a page boundary, so this is always zero
         uint16_t read_length;
         if (i == num_pages - 1) {
             read_length = last_page_size;
@@ -86,7 +86,7 @@ static bool verify_checksum(uint8_t *data, uint16_t length, uint32_t checksum) {
 
     uint32_t a = 1, b = 0;
     size_t index;
-    
+
     // Process each byte of the data in order
     for (index = 0; index < length; ++index)
     {
@@ -94,7 +94,7 @@ static bool verify_checksum(uint8_t *data, uint16_t length, uint32_t checksum) {
         b = (b + a) % MOD_ADLER;
     }
     uint32_t calculated = ((b << 16) | a);
-    
+
     return calculated == checksum;
 }
 
@@ -204,6 +204,8 @@ static void myr_encoder_init(void) {
 }
 
 static uint16_t myr_joystick_timer;
+static int16_t x_origin = 0;
+static int16_t y_origin = 0;
 static void myr_joystick_init(void) {
     gpio_set_pin_input_high(MYRIAD_GPIO1); // Press
 
@@ -283,8 +285,8 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
     myr_joystick_timer = timer_read();
 
     // `analogReadPin` returns 0..1023
-    int16_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1; // Note: axis is flipped
-    int16_t x = analogReadPin(MYRIAD_ADC2) - 512;
+    int16_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1 - y_origin; // Note: axis is flipped
+    int16_t x = analogReadPin(MYRIAD_ADC2) - 512 - x_origin;
     // Values are now -512..512
 
     // Create a dead zone in the middle where the mouse doesn't move
@@ -314,4 +316,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
 void pointing_device_driver_init(void) {
     gpio_set_pin_input(MYRIAD_ADC1); // Y
     gpio_set_pin_input(MYRIAD_ADC2); // X
+    wait_ms(20);
+    y_origin = (analogReadPin(MYRIAD_ADC1) - 512) * -1; // Note: axis is flipped
+    x_origin = analogReadPin(MYRIAD_ADC2) - 512;
 }
