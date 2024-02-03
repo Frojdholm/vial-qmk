@@ -284,6 +284,14 @@ void myriad_hook_encoder(uint8_t count, bool pads[]) {
     pads[7] = !readPin(MYRIAD_GPIO3);
 }
 
+static int16_t subtract_dead_zone(int16_t val, int16_t dead_zone) {
+    if (abs(val) < dead_zone) {
+        return 0;
+    } else {
+        return val > 0 ? val - dead_zone : val + dead_zone;
+    }
+}
+
 report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
     if (myriad_card_init() != SKB_JOYSTICK) { return mouse_report; }
 
@@ -300,13 +308,9 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
     // Values are now -512..512
 
     // Create a dead zone in the middle where the mouse doesn't move
-    const int16_t dead_zone = 10;
-    if ((y < 0 && y > -1*dead_zone) || (y > 0 && y < dead_zone)) {
-        y = 0;
-    }
-    if ((x < 0 && x > -1*dead_zone) || (x > 0 && x < dead_zone)) {
-        x = 0;
-    }
+    const int16_t dead_zone = 15;
+    y = subtract_dead_zone(y, dead_zone);
+    x = subtract_dead_zone(x, dead_zone);
 
     x = x / 16;
     y = y / 16;
