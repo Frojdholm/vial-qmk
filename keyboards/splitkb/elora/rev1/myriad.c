@@ -21,6 +21,15 @@
 #include "i2c_master.h"
 #include "analog.h"
 
+// Delay between sending scroll ticks in milliseconds.
+//
+// This delay will be divided by the output of the joystick [-127, 127] to
+// produce the final delay. A smaller delay will lead to more scroll ticks
+// being sent, causing a faster scroll.
+#ifndef MYRIAD_SCROLL_BASE_DELAY
+#   define MYRIAD_SCROLL_BASE_DELAY 640
+#endif
+
 typedef struct __attribute__((__packed__)) {
     char magic_numbers[3];
     uint8_t version_major;
@@ -219,6 +228,8 @@ static void myr_encoder_init(void) {
 }
 
 static uint16_t myr_joystick_timer;
+static bool myr_joystick_scroll_mode = false;
+
 static void myr_joystick_init(void) {
     setPinInputHigh(MYRIAD_GPIO1); // Press
 
@@ -283,6 +294,10 @@ void myriad_hook_encoder(uint8_t count, bool pads[]) {
     pads[7] = !readPin(MYRIAD_GPIO3);
 }
 
+static int8_t get_sign(int8_t val) {
+    return (val > 0) ? 1 : ((val < 0) ? -1 : 0);
+}
+
 static myr_joystick_report_t read_joystick(void) {
     // `analogReadPin` returns 0..1023
     int32_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1; // Note: axis is flipped
@@ -311,19 +326,46 @@ static myr_joystick_report_t read_joystick(void) {
     return (myr_joystick_report_t){.x = x, .y = y};
 }
 
+void set_myriad_joystick_scroll_mode(bool val) {
+    myr_joystick_scroll_mode = val;
+}
+
+bool get_myriad_joystick_scroll_mode(void) {
+    return myr_joystick_scroll_mode;
+}
+
 report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
     if (myriad_card_init() != SKB_JOYSTICK) { return mouse_report; }
 
-    if (timer_elapsed(myr_joystick_timer) < 10) {
-        wait_ms(2);
-        return mouse_report;
+    if (myr_joystick_scroll_mode) {
+        const myr_joystick_report_t joystick_report = read_joystick();
+
+        const int16_t y_mult = abs(joystick_report.y);
+        const int16_t x_mult = abs(joystick_report.x);
+        const int16_t mult = y_mult > x_mult ? y_mult : x_mult;
+
+        // When scrolling mouse_report.(v|h) == 1 is equivalent to 1 "tick" on the
+        // mouse scroll wheel. To get a reasonable scrolling speed the scroll is instead
+        // controlled by the delay of sending new mouse reports.
+        if (mult * timer_elapsed(myr_joystick_timer) < MYRIAD_SCROLL_BASE_DELAY) {
+            wait_ms(2);
+            return mouse_report;
+        }
+
+        mouse_report.h = get_sign(joystick_report.x);
+        mouse_report.v = -get_sign(joystick_report.y);
+    } else {
+        if (timer_elapsed(myr_joystick_timer) < 10) {
+            wait_ms(2);
+            return mouse_report;
+        }
+
+        const myr_joystick_report_t joystick_report = read_joystick();
+        mouse_report.x = joystick_report.x;
+        mouse_report.y = joystick_report.y;
     }
 
     myr_joystick_timer = timer_read();
-
-    const myr_joystick_report_t joystick_report = read_joystick();
-    mouse_report.x = joystick_report.x;
-    mouse_report.y = joystick_report.y;
 
     return mouse_report;
 }

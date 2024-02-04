@@ -31,6 +31,9 @@ bool myriad_hook_matrix(matrix_row_t current_matrix[]);
 void myriad_hook_encoder(uint8_t count, bool pads[]);
 myriad_card_t detect_myriad(void);
 
+void set_myriad_joystick_scroll_mode(bool val);
+bool get_myriad_joystick_scroll_mode(void);
+
 //// Elora-specific pinout
 
 // Control signals
