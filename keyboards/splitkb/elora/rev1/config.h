@@ -69,3 +69,5 @@
 #    undef SPLIT_OLED_ENABLE
 #    define OLED_TIMEOUT 0
 #endif
+
+#define SPLIT_TRANSACTION_IDS_KB MYRIAD_SYNC

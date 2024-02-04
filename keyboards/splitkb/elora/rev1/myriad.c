@@ -392,3 +392,8 @@ void myriad_task(void) {
             break;
     }
 }
+
+void myriad_sync_slave_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data) {
+    myriad_data_sync_t* m2s = (myriad_data_sync_t*)in_data;
+    set_myriad_joystick_scroll_mode(m2s->joystick_scroll_mode);
+}

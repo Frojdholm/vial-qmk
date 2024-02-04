@@ -34,6 +34,14 @@ myriad_card_t detect_myriad(void);
 void set_myriad_joystick_scroll_mode(bool val);
 bool get_myriad_joystick_scroll_mode(void);
 
+// NOTE: Data sync by default is limited to 32 bytes, so this struct cannot
+// get larger than that without changing RPC_M2S_BUFFER_SIZE and RPC_S2M_BUFFER_SIZE
+typedef struct {
+    bool joystick_scroll_mode;
+} myriad_data_sync_t;
+
+void myriad_sync_slave_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data);
+
 //// Elora-specific pinout
 
 // Control signals
