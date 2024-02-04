@@ -50,6 +50,8 @@ typedef struct {
     int8_t y;
 } myr_joystick_report_t;
 
+static bool myriad_sync_dirty_flag = false;
+
 static bool myriad_reader(uint8_t *data, uint16_t length) {
     i2c_init();
 
@@ -327,6 +329,9 @@ static myr_joystick_report_t read_joystick(void) {
 }
 
 void set_myriad_joystick_scroll_mode(bool val) {
+    if (myr_joystick_scroll_mode != val) {
+        myriad_sync_dirty_flag = true;
+    }
     myr_joystick_scroll_mode = val;
 }
 
@@ -396,4 +401,13 @@ void myriad_task(void) {
 void myriad_sync_slave_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data) {
     myriad_data_sync_t* m2s = (myriad_data_sync_t*)in_data;
     set_myriad_joystick_scroll_mode(m2s->joystick_scroll_mode);
+}
+
+bool myriad_should_sync(void) {
+    if (myriad_sync_dirty_flag) {
+        myriad_sync_dirty_flag = false;
+        return true;
+    } else {
+        return false;
+    }
 }

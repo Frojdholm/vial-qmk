@@ -41,6 +41,7 @@ typedef struct {
 } myriad_data_sync_t;
 
 void myriad_sync_slave_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data);
+bool myriad_should_sync(void);
 
 //// Elora-specific pinout
 

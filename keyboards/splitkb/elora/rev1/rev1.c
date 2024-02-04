@@ -363,9 +363,8 @@ bool oled_task_kb(void) {
 void housekeeping_task_kb(void) {
     is_oled_enabled = last_input_activity_elapsed() < 60000;
     if (is_keyboard_master()) {
-        // TODO: Only sync data when state changes
         static uint32_t last_sync = 0;
-        if (timer_elapsed32(last_sync) > 20) {
+        if (timer_elapsed32(last_sync) > 20 && myriad_should_sync()) {
             myriad_data_sync_t m2s = {.joystick_scroll_mode = get_myriad_joystick_scroll_mode()};
             if (transaction_rpc_send(MYRIAD_SYNC, sizeof(m2s), &m2s)) {
                 last_sync = timer_read32();
