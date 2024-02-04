@@ -36,6 +36,11 @@ typedef struct __attribute__((__packed__)) {
     uint8_t revision;
 } identity_record_t;
 
+typedef struct {
+    int8_t x;
+    int8_t y;
+} myr_joystick_report_t;
+
 static bool myriad_reader(uint8_t *data, uint16_t length) {
     i2c_init();
 
@@ -278,16 +283,7 @@ void myriad_hook_encoder(uint8_t count, bool pads[]) {
     pads[7] = !readPin(MYRIAD_GPIO3);
 }
 
-report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
-    if (myriad_card_init() != SKB_JOYSTICK) { return mouse_report; }
-
-    if (timer_elapsed(myr_joystick_timer) < 10) {
-        wait_ms(2);
-        return mouse_report;
-    }
-
-    myr_joystick_timer = timer_read();
-
+static myr_joystick_report_t read_joystick(void) {
     // `analogReadPin` returns 0..1023
     int32_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1; // Note: axis is flipped
     int32_t x = analogReadPin(MYRIAD_ADC2) - 512;
@@ -312,8 +308,22 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
     if (x < -127) { x = -127; }
     if (x > 127) { x = 127; }
 
-    mouse_report.x = x;
-    mouse_report.y = y;
+    return (myr_joystick_report_t){.x = x, .y = y};
+}
+
+report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
+    if (myriad_card_init() != SKB_JOYSTICK) { return mouse_report; }
+
+    if (timer_elapsed(myr_joystick_timer) < 10) {
+        wait_ms(2);
+        return mouse_report;
+    }
+
+    myr_joystick_timer = timer_read();
+
+    const myr_joystick_report_t joystick_report = read_joystick();
+    mouse_report.x = joystick_report.x;
+    mouse_report.y = joystick_report.y;
 
     return mouse_report;
 }
