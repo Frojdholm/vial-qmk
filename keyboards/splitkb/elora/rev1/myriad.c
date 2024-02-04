@@ -18,8 +18,11 @@
 
 #include "myriad.h"
 
+#include "pointing_device.h"
 #include "i2c_master.h"
 #include "analog.h"
+
+#include <stdint.h>
 
 typedef struct __attribute__((__packed__)) {
     char magic_numbers[3];
