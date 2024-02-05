@@ -17,6 +17,8 @@
 #include QMK_KEYBOARD_H
 
 #include "pointing_device_auto_mouse.h"
+#include "quantum_keycodes.h"
+#include "report.h"
 
 enum layers {
     _QWERTY = 0,
@@ -26,6 +28,10 @@ enum layers {
     _SYM,
     _FUNCTION,
     _ADJUST,
+};
+
+enum custom_keycodes {
+    SCROLL_MODE = SAFE_RANGE,
 };
 
 // Aliases for readability
@@ -131,7 +137,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  */
     [_MOUSE] = LAYOUT_myr(
       _______, _______, _______, _______, _______, _______,          _______, _______,          _______, _______, _______, _______, _______, _______,
-      _______, _______, _______, _______, _______, _______,          _______, _______,          _______, _______, KC_MS_UP,   _______,  _______, _______,
+      _______, _______, _______,SCROLL_MODE, _______, _______,          _______, _______,          _______, _______, KC_MS_UP,   _______,  _______, _______,
       _______, KC_BTN4, KC_BTN5, KC_BTN1, KC_BTN2, KC_BTN3,          _______, _______,          _______, KC_MS_LEFT, KC_MS_DOWN, KC_MS_RIGHT, _______, _______,
       _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,_______, KC_MS_WH_DOWN, KC_MS_WH_UP, _______, _______, _______,
                                  _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
@@ -414,6 +420,61 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
     }
 };
 #endif
+
+static bool scrolling_mode = false;
+static uint16_t myr_scroll_timer_left = 0;
+static uint16_t myr_scroll_timer_right = 0;
+static const uint16_t scroll_base_delay = 32 * 20;
+
+static mouse_xy_report_t signum_mouse_report(mouse_xy_report_t val) {
+    return (val > 0) - (val < 0);
+}
+
+static mouse_xy_report_t max_mouse_report(mouse_xy_report_t a, mouse_xy_report_t b) {
+    return a > b ? a : b;
+}
+
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case SCROLL_MODE:
+            if (record->event.pressed) {
+                scrolling_mode = true;
+            } else { // released
+                scrolling_mode = false;
+            }
+            return false;
+    }
+    return true;
+}
+
+bool is_mouse_record_user(uint16_t keycode, keyrecord_t *record) {
+    return keycode == SCROLL_MODE;
+}
+
+
+report_mouse_t pointing_device_task_combined_user(report_mouse_t left_report, report_mouse_t right_report) {
+    if (scrolling_mode) {
+        const mouse_xy_report_t left_mult = max_mouse_report(abs(left_report.y), abs(left_report.x));
+        if (left_mult * timer_elapsed(myr_scroll_timer_left) > scroll_base_delay) {
+            left_report.v = -signum_mouse_report(left_report.y);
+            left_report.h = signum_mouse_report(left_report.x);
+            myr_scroll_timer_left = timer_read();
+        }
+
+        const mouse_xy_report_t right_mult = max_mouse_report(abs(right_report.y), abs(right_report.x));
+        if (right_mult * timer_elapsed(myr_scroll_timer_right) > scroll_base_delay) {
+            right_report.v = -signum_mouse_report(right_report.y);
+            right_report.h = signum_mouse_report(right_report.x);
+            myr_scroll_timer_right = timer_read();
+        }
+
+        left_report.x = 0;
+        left_report.y = 0;
+        right_report.x = 0;
+        right_report.y = 0;
+    }
+    return pointing_device_combine_reports(left_report, right_report);
+}
 
 void pointing_device_init_user(void) {
     set_auto_mouse_layer(_MOUSE);
