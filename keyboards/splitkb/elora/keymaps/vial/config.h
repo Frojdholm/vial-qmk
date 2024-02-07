@@ -40,3 +40,6 @@
 
 // Automatically enable mouse keys when moving the mouse with the joystick
 #define POINTING_DEVICE_AUTO_MOUSE_ENABLE
+
+#define SPLIT_LAYER_STATE_ENABLE
+#define SPLIT_LED_STATE_ENABLE
