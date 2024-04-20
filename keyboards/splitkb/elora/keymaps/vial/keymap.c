@@ -386,7 +386,7 @@ report_mouse_t pointing_device_task_combined_user(report_mouse_t left_report, re
     return pointing_device_combine_reports(left_report, right_report);
 }
 
-void pointing_device_init_user(void) {
-    set_auto_mouse_layer(_MOUSE);
-    set_auto_mouse_enable(true);
-}
+// void pointing_device_init_user(void) {
+//     set_auto_mouse_layer(_MOUSE);
+//     set_auto_mouse_enable(true);
+// }
