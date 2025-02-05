@@ -274,7 +274,7 @@ uint8_t myriad_hook_encoder(uint8_t index, bool pad_b) {
     return gpio_read_pin(pin) ? 1 : 0;
 }
 
-static int16_t subtract_dead_zone(int16_t val, int16_t dead_zone) {
+static int32_t subtract_dead_zone(int32_t val, int32_t dead_zone) {
     if (abs(val) < dead_zone) {
         return 0;
     } else {
@@ -293,17 +293,17 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
     myr_joystick_timer = timer_read();
 
     // `analogReadPin` returns 0..1023
-    int16_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1 - y_origin; // Note: axis is flipped
-    int16_t x = analogReadPin(MYRIAD_ADC2) - 512 - x_origin;
+    int32_t y = (analogReadPin(MYRIAD_ADC1) - 512) * -1 - y_origin; // Note: axis is flipped
+    int32_t x = analogReadPin(MYRIAD_ADC2) - 512 - x_origin;
     // Values are now -512..512
 
     // Create a dead zone in the middle where the mouse doesn't move
-    const int16_t dead_zone = 15;
+    const int32_t dead_zone = 10;
     y = subtract_dead_zone(y, dead_zone);
     x = subtract_dead_zone(x, dead_zone);
 
-    x = x / 16;
-    y = y / 16;
+    x = abs(x) * x / 5000;
+    y = abs(y) * y / 5000;
 
     // Clamp final value to make sure we don't under/overflow
     if (y < -127) { y = -127; }
